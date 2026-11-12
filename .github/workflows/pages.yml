@@ -1,0 +1,47 @@
+# 把构建好的单文件页面发布到 GitHub Pages
+#
+# 为什么需要这个：Cloudflare 的 *.workers.dev 在国内被解析到 127.0.0.1（打不开），
+# 而 liyy66.github.io 这类 Pages 域名在本机实测 443 可通，可以作为「国内能打开的链接」兜底。
+#
+# 注意：GitHub Pages 只能放静态文件，没有 /api 后端，所以这个链接里的 AI 会退化成
+# 「内置证据引擎」（不联网、不接模型）；完整版仍然用带域名的 Cloudflare Worker。
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 构建单文件页面
+        run: node tools/build.mjs
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
