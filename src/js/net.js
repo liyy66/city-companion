@@ -222,7 +222,7 @@
           host: x.host || U.hostOf(x.url || ''),
           text: x.text || x.snippet || '',
           date: x.date || '',
-          kind: 'official'
+          kind: x.kind === 'wechat' ? 'wechat' : 'official'
         };
       }).filter(function (x) { return x.url; });
       return { ok: !!list.length, via: (d && d.via) || 'proxy', sources: list, reason: list.length ? '' : ((d && d.reason) || '政府站点没有相关页面') };
