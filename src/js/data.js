@@ -299,7 +299,25 @@
       var rb = rank[b.kind] == null ? 3 : rank[b.kind];
       return ra - rb || String(a.n).localeCompare(String(b.n), 'zh-CN');
     });
-    return arr;
+    // 同名景点会同时来自「精选卡」和「官方事实/县域」，只留一条，把缺的字段补上，
+    // 否则景列表里会出现两个「翠湖公园」（线上截图里出现过，别删这段）。
+    var seen = new Map();
+    var merged = [];
+    for (var k = 0; k < arr.length; k++) {
+      var p = arr[k];
+      var key = String(p.n || '').replace(/[\s·（）()]/g, '');
+      var hit = seen.get(key);
+      if (!hit) { seen.set(key, p); merged.push(p); continue; }
+      ['desc', 'price', 'hours', 'crowd', 'hl', 'src', 'lat', 'lng'].forEach(function (f) {
+        if ((hit[f] == null || hit[f] === '' || (Array.isArray(hit[f]) && !hit[f].length)) && p[f] != null) hit[f] = p[f];
+      });
+      if (p.aliases && p.aliases.length) {
+        hit.aliases = (hit.aliases || []).concat(p.aliases.filter(function (a) {
+          return (hit.aliases || []).indexOf(a) < 0;
+        }));
+      }
+    }
+    return merged;
   }
 
   function nearbyPois(lat, lng, radiusM, limit) {
