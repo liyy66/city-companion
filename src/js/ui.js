@@ -84,7 +84,12 @@
       }
     });
 
-    setPill($('#pillModel'), CFG.modelReady() ? (CFG.get().model || '模型已配置') : '模型未配置', CFG.modelReady() ? 'ok' : 'warn');
+    // 有后端（线上 Functions / 本地 server.mjs）时先别急着写「未配置」：
+    // /api/health 马上会说站点有没有自带模型，这句只作为一两百毫秒的占位。
+    var sitePending = !CFG.modelReady() && !!CFG.proxyBase();
+    setPill($('#pillModel'),
+      CFG.modelReady() ? (CFG.get().model || '模型已配置') : (sitePending ? '检测站点模型…' : '模型未配置'),
+      CFG.modelReady() ? 'ok' : (sitePending ? '' : 'warn'));
     setPill($('#pillMode'), CFG.modelReady() ? CFG.get().model : '证据引擎', CFG.modelReady() ? 'ok' : '');
 
     // 站点能力（线上 Functions / 本地 server.mjs）：有内置模型时访客什么都不用配

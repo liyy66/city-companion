@@ -13,7 +13,9 @@ import { json, fail, sameSite, rateLimit, chatUrlOf, timeoutSignal, readJson } f
 
 export const config = { path: '/api/chat' };
 
-const MODEL_TIMEOUT = 8500;
+// Netlify 同步函数上限 10 秒，所以模型这一跳留 9 秒（DeepSeek 正常 4–6 秒，
+// 留出冷启动余量）；超时就明确报 504，前端会退回内置证据引擎，不会白屏。
+const MODEL_TIMEOUT = 9000;
 
 export default async (req, context) => {
   if (req.method === 'OPTIONS') return json({ ok: true });
