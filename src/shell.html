@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#142e2a">
+<meta name="description" content="城市安心游：接高德实时地图，把景点、门票、入口与消费核实放在同一页；AI 向导带来源回答，不编造。">
+<title>城市安心游 · 实时地图 + 有依据的 AI 出行向导</title>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<svg style="display:none" aria-hidden="true">
+  <symbol id="i-compass" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.5 13 13l-4.5 2.5L11 11z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2 2 2 0 1 1-4 0 1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1h.1a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.6 1z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12h14"/><path d="m12.5 5.5 6.5 6.5-6.5 6.5"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+  <symbol id="i-fit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 3H3v6M15 3h6v6M15 21h6v-6M9 21H3v-6"/></symbol>
+  <symbol id="i-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4 12.5 5 5L20 6.5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 8v5"/><circle cx="12" cy="16.5" r=".6" fill="currentColor"/><path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".7" fill="currentColor"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5 13.9 9l5.6 1.9-5.6 1.9L12 18.4l-1.9-5.6L4.5 10.9 10.1 9 12 3.5Z"/><path d="M18.5 16.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 21s7-6.1 7-11a7 7 0 1 0-14 0c0 4.9 7 11 7 11Z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12 5l7 7-7 7"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/></symbol>
+  <symbol id="i-walk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="1.8"/><path d="M11 21l1.6-5.4L10 13l.8-4.4 3 1.6 2.4 2.2M10 13l-2.6 3M9.4 9.2 6.5 10.5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3l7 3v5.5c0 4.4-3 7.8-7 9.5-4-1.7-7-5.1-7-9.5V6l7-3Z"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
+
+<header class="nav">
+  <div class="wrap nav-inner">
+    <a class="brand" href="#top" aria-label="城市安心游首页">
+      <span class="brand-mark"><svg><use href="#i-compass"/></svg></span>
+      <span><span class="brand-name">城市安心游</span><br><span class="brand-en">City Companion</span></span>
+    </a>
+    <nav class="nav-links" aria-label="页面导航">
+      <a href="#explore">实时地图</a>
+      <a href="#assistant">AI 向导</a>
+      <a href="#verify">消费核验</a>
+    </nav>
+    <div class="nav-right">
+      <span class="pill optional" id="pillData" title="内置数据规模"><i></i><span>数据加载中</span></span>
+      <span class="pill" id="pillMap" title="底图状态"><i></i><span>底图检测中</span></span>
+      <span class="pill" id="pillModel" title="AI 模型状态"><i></i><span>模型未配置</span></span>
+      <button class="icon-btn" id="btnTheme" type="button" aria-label="切换深浅色" title="切换深浅色"><svg><use href="#i-moon"/></svg></button>
+      <button class="icon-btn" id="btnSettings" type="button" aria-label="设置" title="设置"><svg><use href="#i-settings"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <section class="hero wrap">
+    <div class="hero-grid">
+      <div class="hero-copy reveal">
+        <div class="eyebrow">AI + 文旅 · 实时地图 · 可核验回答</div>
+        <h1>陌生城市，<br><em>看得见</em>也问得清。</h1>
+        <p class="hero-lead">
+          全国 <b>3,900+</b> 座城市接上高德实时底图与区县边界；点开景点能看实拍、门票、入口和时间。
+          AI 向导先检索官方渠道再回答，每一句都带来源——查不到就说查不到。
+        </p>
+        <div class="hero-actions">
+          <a class="btn primary" href="#explore"><svg><use href="#i-pin"/></svg>打开实时地图</a>
+          <a class="btn" href="#assistant"><svg><use href="#i-spark"/></svg>问问小安</a>
+          <button class="btn ghost" id="btnDemo" type="button"><svg><use href="#i-walk"/></svg>看一遍演示路线</button>
+        </div>
+        <div class="hero-meta" id="heroMeta">
+          <div><b class="num" id="statCities">—</b>城市与区县</div>
+          <div><b class="num" id="statPois">—</b>周边点位</div>
+          <div><b class="num" id="statCards">—</b>精选景点卡</div>
+          <div><b class="num" id="statPhotos">—</b>可溯源实拍</div>
+        </div>
+      </div>
+      <div class="stage reveal" id="stage">
+        <canvas id="heroCanvas" aria-hidden="true"></canvas>
+        <div class="stage-glow" aria-hidden="true"></div>
+        <div class="stage-tag"><i></i><span>Three.js · 实时渲染</span></div>
+        <div class="stage-city"><b id="heroCity">重庆</b><span id="heroCoord">29.56°N · 106.57°E</span></div>
+        <div class="stage-foot">
+          <span class="hint">拖动旋转 · 滚轮缩放</span>
+          <span id="heroNote">山城 · 两江 · 立体交通</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPLORE -->
+  <section class="wrap" id="explore">
+    <div class="section-head reveal">
+      <div>
+        <div class="eyebrow">实时地图 · 全国可达</div>
+        <h2>先看地图，再定行程</h2>
+        <p>底图使用高德瓦片（GCJ-02 坐标已校准），任意城市都能加载行政边界与区县；点位分为「精选景点」与「周边可去」。配置高德 Key 后，可直接调用高德 POI 检索、路径规划与实时路况。</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" id="btnAllCities" type="button"><svg><use href="#i-layers"/></svg>全部城市</button>
+        <a class="btn sm" id="btnOpenAmap" href="#" target="_blank" rel="noopener noreferrer"><svg><use href="#i-link"/></svg>在高德中打开</a>
+      </div>
+    </div>
+
+    <div class="workspace reveal">
+      <!-- 城市浏览 -->
+      <aside class="card browser-col" aria-label="城市目录">
+        <div class="card-head"><h3>选择城市</h3><span class="kicker">City</span></div>
+        <div class="card-body" style="padding-bottom:8px">
+          <div class="search-box">
+            <svg class="ic"><use href="#i-search"/></svg>
+            <input class="field" id="cityInput" maxlength="40" placeholder="搜索城市 / 区县，如 重庆、阿勒泰" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="citySuggest" autocomplete="off">
+            <div class="suggest" id="citySuggest" role="listbox" hidden></div>
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:9px" id="hotCities"></div>
+        </div>
+        <div class="city-list" id="cityList" role="list" aria-label="城市列表"></div>
+        <div class="card-body" style="padding-top:0;display:flex;gap:8px">
+          <button class="btn sm ghost city-more" id="btnMoreCity" type="button" style="flex:1">查看更多</button>
+          <button class="btn sm ghost" id="btnCityDialog" type="button" aria-label="城市目录">目录</button>
+        </div>
+      </aside>
+
+      <!-- 地图 -->
+      <div class="map-col" id="mapCol">
+        <div class="map-frame" id="mapFrame">
+          <div id="map" aria-label="城市景点实时地图"></div>
+          <div class="map-topbar">
+            <div class="map-title">
+              <div class="t"><span id="mapCityName">重庆</span><span class="badge" id="mapCityBadge">直辖市</span></div>
+              <div class="s" id="mapCityMeta">正在读取城市资料…</div>
+            </div>
+            <div class="group">
+              <div class="seg" role="group" aria-label="底图样式">
+                <button type="button" data-base="road" aria-pressed="true" title="高德标准"><svg><use href="#i-layers"/></svg>标准</button>
+                <button type="button" data-base="sat" aria-pressed="false" title="高德卫星"><svg><use href="#i-layers"/></svg>卫星</button>
+              </div>
+              <div class="map-tools">
+                <button class="map-tool" id="btnBoundary" type="button" aria-pressed="true" title="显示行政边界"><svg><use href="#i-fit"/></svg></button>
+                <button class="map-tool" id="btnPoi" type="button" aria-pressed="true" title="显示周边点位"><svg><use href="#i-pin"/></svg></button>
+                <button class="map-tool" id="btnFitAll" type="button" title="显示全部点位"><svg><use href="#i-target"/></svg></button>
+                <button class="map-tool" id="btnEnlarge" type="button" title="放大地图"><svg><use href="#i-expand"/></svg></button>
+              </div>
+            </div>
+          </div>
+          <div class="map-status" id="mapStatus"><i></i><span>正在加载高德底图…</span></div>
+          <div class="map-legend">
+            <span><i class="pin"></i>精选景点</span>
+            <span><i class="poi"></i>周边点位</span>
+            <span><i class="bound"></i>行政边界</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 景点列表 -->
+      <aside class="card place-col" aria-label="景点列表">
+        <div class="card-head">
+          <h3 id="placeColTitle">景点与周边</h3>
+          <span class="kicker" id="placeColCount">—</span>
+        </div>
+        <div class="card-body" style="padding:9px 12px">
+          <div style="display:flex;gap:5px;flex-wrap:wrap" id="catFilter"></div>
+        </div>
+        <div class="place-list" id="placeList"></div>
+        <div class="card-body" style="padding-top:0">
+          <button class="btn sm ghost" id="btnMorePlace" type="button" style="width:100%">加载更多周边点位</button>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ASSISTANT -->
+  <section class="wrap" id="assistant">
+    <div class="section-head reveal">
+      <div>
+        <div class="eyebrow">AI 向导 · 检索增强</div>
+        <h2>小安：先查资料，再回答</h2>
+        <p>每次提问都会先解析「城市 / 景点 / 想问什么」，再检索内置资料、官方渠道与联网结果；答案逐句标注来源。资料不足时明确说「未收录」并给出核实路径，而不是编一个像样的答案。</p>
+      </div>
+      <button class="btn sm" id="btnNewChat" type="button">新对话</button>
+    </div>
+
+    <div class="ai-wrap reveal">
+      <div class="card chat-card">
+        <div class="chat-head">
+          <div class="avatar">安</div>
+          <div class="who">
+            <b>小安 · 城市行程向导</b>
+            <span id="chatStatus">检索式回答 · 未配置模型时使用内置证据引擎</span>
+          </div>
+          <span class="pill" id="pillMode" style="margin-left:auto"><i></i><span>证据引擎</span></span>
+        </div>
+        <div class="chat-log" id="chatLog" role="log" aria-live="polite"></div>
+        <div class="composer">
+          <div class="quick-row" id="quickRow"></div>
+          <div class="row">
+            <textarea id="askInput" rows="1" placeholder="问点什么，比如：洪崖洞要门票吗？从哪个口进？" maxlength="300" aria-label="提问"></textarea>
+            <button class="send" id="btnSend" type="button" aria-label="发送"><svg><use href="#i-send"/></svg></button>
+          </div>
+          <div class="hint"><span id="composerHint">Enter 发送 · Shift+Enter 换行</span><span id="composerCtx">城市：—</span></div>
+        </div>
+      </div>
+
+      <div class="side-stack">
+        <div class="card stack-card">
+          <div class="card-head"><h3>回答是怎么来的</h3><span class="kicker">Pipeline</span></div>
+          <div class="card-body">
+            <div class="chain" id="chain">
+              <div class="chain-step" data-step="understand"><i>1</i><div><b>理解问题</b><small>识别城市、景点、意图（门票 / 时间 / 入口 / 路线 / 安全）</small></div></div>
+              <div class="chain-step" data-step="local"><i>2</i><div><b>检索内置资料</b><small>精选景点卡、官方游记事实、县域景区索引、官方提示</small></div></div>
+              <div class="chain-step" data-step="web"><i>3</i><div><b>联网与官方渠道</b><small>政府/文旅官网、公众号文章、搜索引擎结果</small></div></div>
+              <div class="chain-step" data-step="compose"><i>4</i><div><b>生成与校验</b><small>逐句绑定来源，无来源的句子会被丢弃</small></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card stack-card">
+          <div class="card-head"><h3>官方渠道</h3><span class="kicker" id="officialCity">—</span></div>
+          <div class="card-body" id="officialBox">
+            <p style="color:var(--muted);font-size:12px">选择城市后，这里给出文旅官网、公众号与投诉渠道。</p>
+          </div>
+        </div>
+        <div class="card stack-card">
+          <div class="card-head"><h3>当前证据</h3><span class="kicker" id="evidenceCount">0 条</span></div>
+          <div class="card-body" id="evidenceBox" style="max-height:260px;overflow:auto">
+            <p style="color:var(--muted);font-size:12px">提问后，这里会列出本次用到的资料与检索结果。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERIFY -->
+  <section class="wrap" id="verify">
+    <div class="section-head reveal">
+      <div>
+        <div class="eyebrow">消费核验 · 该不该付</div>
+        <h2>把报价拆开算一遍</h2>
+        <p>初到一座城，最容易在「必选景交」「讲解费」「保险」这些名目上加钱。填入人数与报价，看清哪些是必选、哪些可以拒绝。</p>
+      </div>
+    </div>
+    <div class="verify-grid reveal">
+      <div class="card">
+        <div class="card-body">
+          <div class="form-grid">
+            <label><span>人数</span><input class="field" id="feePeople" type="number" min="1" max="60" value="2" inputmode="numeric"></label>
+            <label><span>对方报价（元 / 人）</span><input class="field" id="feeQuote" type="number" min="0" step="0.01" placeholder="例如 198" inputmode="decimal"></label>
+            <label class="full"><span>项目名称</span><input class="field" id="feeItem" placeholder="例如 洪崖洞一日游 / 景区直通车"></label>
+            <label class="full"><span>必须另付的项目（元 / 人，可写多项）</span><input class="field" id="feeMust" placeholder="例如 景交车 30、讲解 20"></label>
+          </div>
+          <div style="margin-top:14px">
+            <div class="check-row"><input type="checkbox" id="feeOptional"><label for="feeOptional" style="margin:0">报价里包含可选项目（演出、拍照、索道等）</label></div>
+            <div class="check-row"><input type="checkbox" id="feeInvoice"><label for="feeInvoice" style="margin:0">提供正规发票 / 电子合同</label></div>
+            <div class="check-row"><input type="checkbox" id="feeAgency"><label for="feeAgency" style="margin:0">能出示旅行社业务经营许可证编号</label></div>
+          </div>
+          <div id="feeAdvice" style="margin-top:14px"></div>
+        </div>
+      </div>
+      <div class="card total-box">
+        <div class="card-body">
+          <div class="eyebrow" style="margin-bottom:8px">实际人均</div>
+          <div class="total-amount" id="feeTotal">—<small>元</small></div>
+          <p style="font-size:11px;color:var(--muted);margin-top:6px" id="feeSub">填入报价后开始计算</p>
+          <div style="margin-top:16px" id="feeBreak"></div>
+          <div style="margin-top:14px" id="feeFlag"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer wrap">
+  <div class="footer-grid">
+    <div class="col">
+      <b style="color:var(--ink)">城市安心游 · City Companion</b>
+      <span>AI + 文旅参赛作品。地图底图 © 高德地图；行政边界 © DataV.GeoAtlas；周边点位 © OpenStreetMap contributors（ODbL）；城市地名 © GeoNames（CC BY 4.0）；实拍 © Wikimedia Commons（各自许可）。</span>
+    </div>
+    <div class="col">
+      <b style="color:var(--ink)">数据边界</b>
+      <span>票价、开放时间、入口与客流均标注来源与日期，可能已变化；出行前请以景区当日公告为准。AI 回答只复述检索到的内容，不代替官方确认。</span>
+    </div>
+    <div class="col">
+      <b style="color:var(--ink)">本机状态</b>
+      <span id="footerStatus">—</span>
+      <span style="opacity:.75">构建 <span id="buildStamp">—</span></span>
+    </div>
+  </div>
+</footer>
+
+<!-- 景点详情 -->
+<dialog id="detailDialog" aria-labelledby="detailTitle">
+  <div class="dlg">
+    <div class="dlg-head">
+      <div>
+        <div class="eyebrow" id="detailCity">—</div>
+        <h3 id="detailTitle">景点</h3>
+        <p id="detailSub">—</p>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn sm" id="detailAsk" type="button"><svg><use href="#i-spark"/></svg>问小安</button>
+        <button class="icon-btn" id="detailClose" type="button" aria-label="关闭">×</button>
+      </div>
+    </div>
+    <div class="dlg-body">
+      <div class="detail-grid">
+        <div>
+          <div class="gallery" id="detailGallery"></div>
+          <p style="font-size:10.5px;color:var(--muted);margin-top:8px" id="detailPhotoNote"></p>
+        </div>
+        <div>
+          <dl class="kv" id="detailFacts"></dl>
+          <div style="margin-top:16px">
+            <div class="eyebrow" style="margin-bottom:8px">资料与出处</div>
+            <div class="src-list" id="detailSources"></div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+            <a class="btn sm" id="detailAmap" href="#" target="_blank" rel="noopener noreferrer"><svg><use href="#i-link"/></svg>高德地图</a>
+            <a class="btn sm" id="detailBaidu" href="#" target="_blank" rel="noopener noreferrer"><svg><use href="#i-link"/></svg>百度地图</a>
+            <button class="btn sm ghost" id="detailRoute" type="button"><svg><use href="#i-walk"/></svg>路线与入口</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<!-- 城市目录 -->
+<dialog id="cityDialog" aria-labelledby="cityDialogTitle">
+  <div class="dlg" style="height:82vh">
+    <div class="dlg-head">
+      <div>
+        <div class="eyebrow">城市目录</div>
+        <h3 id="cityDialogTitle">全部城市与区县</h3>
+        <p id="cityDialogMeta">—</p>
+      </div>
+      <button class="icon-btn" id="cityDialogClose" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="dlg-body">
+      <div class="form-grid" style="margin-bottom:12px">
+        <label><span>省 / 自治区</span><select class="field" id="provinceSel"><option value="">全部</option></select></label>
+        <label><span>搜索</span><input class="field" id="cityFilter" placeholder="城市或区县名"></label>
+      </div>
+      <div class="city-grid" id="cityGrid"></div>
+    </div>
+    <div class="dlg-foot"><button class="btn sm ghost" id="cityMore" type="button">加载更多</button></div>
+  </div>
+</dialog>
+
+<!-- 大图 -->
+<dialog id="photoDialog" aria-label="景点照片">
+  <div class="dlg">
+    <div class="dlg-head">
+      <div><h3 id="photoTitle">照片</h3><p id="photoCredit"></p></div>
+      <button class="icon-btn" id="photoClose" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="photo-stage"><img id="photoLarge" alt=""></div>
+    <div class="photo-nav" id="photoNav"></div>
+    <div class="dlg-foot"><a class="btn sm" id="photoSource" href="#" target="_blank" rel="noopener noreferrer">查看原始页面 ↗</a></div>
+  </div>
+</dialog>
+
+<!-- 设置 -->
+<dialog id="settingsDialog" aria-labelledby="settingsTitle">
+  <div class="dlg" style="max-width:640px">
+    <div class="dlg-head">
+      <div><div class="eyebrow">接入配置</div><h3 id="settingsTitle">地图与模型</h3><p>密钥只保存在本机浏览器（localStorage），不会上传。</p></div>
+      <button class="icon-btn" id="settingsClose" type="button" aria-label="关闭">×</button>
+    </div>
+    <div class="dlg-body">
+      <div class="settings-section">
+        <h4>高德地图</h4>
+        <p>不填也能用：底图瓦片、行政边界、内置点位全部可用。填入 JS API Key 与安全密钥后，可启用高德 POI 检索、路径规划与实时路况。</p>
+        <div class="kv-field"><label>JS API Key</label><input class="field" id="setAmapKey" placeholder="web 端 JS API Key" autocomplete="off"></div>
+        <div class="kv-field"><label>安全密钥</label><input class="field" id="setAmapSecret" placeholder="securityJsCode（可选）" autocomplete="off"></div>
+        <div class="row" style="display:flex;gap:6px;margin-top:4px">
+          <button class="btn sm" id="testAmap" type="button">测试高德</button>
+          <span class="test-out" id="amapOut"></span>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h4>大模型</h4>
+        <p>兼容 OpenAI 协议的任意服务（DeepSeek、通义千问、Kimi、Ollama、自建网关）。留空时使用内置证据引擎，仍然逐句带来源。本机或另一台电脑上的 Ollama 千问 4B 也能接：接口地址填 <code>http://127.0.0.1:11434/v1</code>（换机器就填 <code>http://那台电脑的IP:11434/v1</code>），模型填 <code>ollama list</code> 里的名字，Key 可留空。</p>
+        <div class="kv-field"><label>接口地址</label><input class="field" id="setBaseUrl" placeholder="https://api.deepseek.com/v1" autocomplete="off"></div>
+        <div class="kv-field"><label>模型</label><input class="field" id="setModel" placeholder="deepseek-chat / qwen-plus / llama3" autocomplete="off"></div>
+        <div class="kv-field"><label>API Key</label><input class="field" id="setModelKey" placeholder="sk-..." autocomplete="off"></div>
+        <div class="row" style="display:flex;gap:6px;margin-top:4px">
+          <button class="btn sm" id="testModel" type="button">测试模型</button>
+          <span class="test-out" id="modelOut"></span>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h4>联网检索</h4>
+        <p>浏览器直连会被跨域拦截，推荐配合随包的 <code>server.mjs</code>（<code>node server.mjs</code>）使用：它代理搜索引擎、政府官网与公众号文章的抓取。也可以直接填搜索 API Key。</p>
+        <div class="kv-field"><label>本地服务</label><input class="field" id="setProxy" placeholder="http://127.0.0.1:8787" autocomplete="off"></div>
+        <div class="kv-field"><label>搜索服务</label>
+          <div class="row">
+            <select class="field" id="setSearchProvider" style="max-width:130px">
+              <option value="auto">自动</option>
+              <option value="bocha">博查</option>
+              <option value="tavily">Tavily</option>
+              <option value="proxy">仅本地代理</option>
+              <option value="none">不联网</option>
+            </select>
+            <input class="field" id="setSearchKey" placeholder="搜索 API Key（可选）" autocomplete="off">
+          </div>
+        </div>
+        <div class="row" style="display:flex;gap:6px;margin-top:4px">
+          <button class="btn sm" id="testSearch" type="button">测试检索</button>
+          <span class="test-out" id="searchOut"></span>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h4>外观</h4>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="chip" data-theme-set="auto" type="button">跟随系统</button>
+          <button class="chip" data-theme-set="light" type="button">浅色</button>
+          <button class="chip" data-theme-set="dark" type="button">深色</button>
+          <button class="chip" id="btnClearCache" type="button">清除本机缓存</button>
+        </div>
+        <p class="settings-note">坐标：内置点位为 WGS-84，渲染到高德底图时自动转换为 GCJ-02；切换底图不会造成偏移。</p>
+      </div>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn sm ghost" id="settingsReset" type="button">恢复默认</button>
+      <button class="btn sm primary" id="settingsSave" type="button">保存并应用</button>
+    </div>
+  </div>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script id="atlas-data" type="application/json">__ATLAS_DATA__</script>
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/three.js"></script>
+<script src="js/util.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/config.js"></script>
+<script src="js/data.js"></script>
+<script src="js/net.js"></script>
+<script src="js/knowledge.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/map.js"></script>
+<script src="js/three-hero.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/boot.js"></script>
+</body>
+</html>

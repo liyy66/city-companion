@@ -1,0 +1,15 @@
+# Cloudflare Pages 项目配置
+#
+# 线上构建走 Cloudflare 控制台（Build command: node tools/build.mjs / Output: dist），
+# 这个文件主要是给本地 `npx wrangler pages dev dist` 用的，dev 时会读到同一个 KV 绑定。
+
+name = "city-companion"
+compatibility_date = "2025-05-01"
+pages_build_output_dir = "dist"
+
+# 可选：给 /api/chat 加按 IP 限流（30 次 / 10 分钟）。
+# 在 Cloudflare 控制台 → Workers & Pages → KV 建一个命名空间，然后把 id 填进来；
+# 不填也能跑，只是没有限流（接口本身已经限制长度、max_tokens 和同站调用）。
+# [[kv_namespaces]]
+# binding = "AX_KV"
+# id = "把 KV 命名空间的 id 粘在这里"

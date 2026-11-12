@@ -1,0 +1,25 @@
+# 构建产物：由 Cloudflare Pages / 本地 build 生成，不进仓库
+dist/
+
+# 原始素材与拆分中间件（体量大，含第三方内容）
+parts-index/
+parts-work/
+作品-原始.html
+index-原始.html
+项目说明.pdf
+
+# 数据中间文件：构建只需要 data/atlas.json 与 data/photos/
+data/_photos.json
+data/admin.json
+
+# 本地运行与调试产物
+*.log
+*.zip
+*.err
+部署包/
+.wrangler/
+node_modules/
+.env
+.env.*
+.DS_Store
+Thumbs.db

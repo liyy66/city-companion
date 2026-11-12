@@ -1,0 +1,12 @@
+﻿const r = await fetch('https://geo.datav.aliyun.com/areas_v3/bound/all.json', { signal: AbortSignal.timeout(20000) });
+const j = await r.json();
+console.log('type', j.type, 'features', j.features?.length);
+const p = j.features?.[0]?.properties;
+console.log('props keys', Object.keys(p||{}));
+console.log('sample', JSON.stringify({adcode:p?.adcode,name:p?.name,level:p?.level,childrenNum:p?.childrenNum,center:p?.center,parent:p?.parent}).slice(0,300));
+const levels = {}; for (const f of j.features) levels[f.properties.level] = (levels[f.properties.level]||0)+1;
+console.log('levels', levels);
+const names = j.features.slice(0,5).map(f=>f.properties.name+':'+f.properties.adcode);
+console.log(names);
+const city = j.features.find(f=>f.properties.name==='重庆');
+console.log('cq', city && JSON.stringify(city.properties).slice(0,400));
