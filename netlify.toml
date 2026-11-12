@@ -1,0 +1,22 @@
+# Netlify 部署配置
+#
+# 为什么换到 Netlify：Cloudflare 的 *.workers.dev / *.pages.dev 在这边被解析到 127.0.0.1，
+# 打不开；而 *.netlify.app 实测 443 可通，且免费额度自带 Node 函数（能跑 /api/*），
+# 所以「官方渠道 → 联网 → 模型」这条链路可以原样保留，不需要买域名。
+#
+# 注意：不要加 /* → /index.html 的兜底重写，否则会把 /api/* 的函数路由一起吞掉。
+# 这个作品只有一页，站内跳转都是 #锚点，不需要 SPA 重写。
+
+[build]
+  # 把 src/ + data/ 内联成一个 9MB 的单文件 HTML，产物在 dist/
+  command = "node tools/build.mjs"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+  # functions 会 import 仓库根的 lib/core.js（与本地 server.mjs 共用同一套检索逻辑）
+  included_files = ["lib/core.js"]
+
+[build.environment]
+  NODE_VERSION = "22"

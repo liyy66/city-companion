@@ -96,3 +96,23 @@ server.mjs              零依赖本地服务（静态 + /api/*）
 - 免费版 Cloudflare Functions 单次 10ms CPU，官方正文抓取依赖缓存；超限时自动降级为「官方入口链接」
 - 搜狗/360 对海外 IP 可能返回验证码，此时检索以博查 API 为主
 - 内置资料只覆盖 19 个城市的精选卡，其余城市靠实时地图 + 周边点位 + 联网问答
+
+## 部署到 Netlify（国内可直接访问）
+
+Cloudflare 的 *.workers.dev / *.pages.dev 在国内会被解析到 127.0.0.1，打不开；
+*.netlify.app 实测 443 可通，且免费额度自带 Node 函数，所以「官方渠道 → 联网 → 模型」
+整条链路可以保留，也不需要买域名。
+
+1. Netlify → Add new site → Import an existing project → 选 GitHub 仓库 city-companion
+2. 构建参数由根目录的 netlify.toml 决定：命令 node tools/build.mjs，发布目录 dist
+3. Site configuration → Environment variables 里加：
+   - MODEL_BASE_URL = https://api.deepseek.com/v1
+   - MODEL_NAME = deepseek-chat
+   - MODEL_API_KEY = 你的 Key（只存在服务端，不会进页面）
+   - 可选：BOCHA_API_KEY（官方渠道走 API，比 HTML 检索稳）、AMAP_KEY（高德 POI / 路径规划）
+4. Deploys → Trigger deploy，然后访问 https://<站点名>.netlify.app/api/health
+   应看到 "chat":true；首页顶栏会显示「站点模型 · deepseek-chat」。
+
+接口实现放在 netlify/functions/（health / search / official / page / chat / amap-poi），
+和本地 server.mjs、Cloudflare functions/ 共用同一套 lib/core.js，三处行为一致。
+本地可以先跑 node tools/test-netlify.mjs 验证这六个函数（不需要部署）。
