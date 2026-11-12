@@ -104,7 +104,8 @@ Cloudflare 的 *.workers.dev / *.pages.dev 在国内会被解析到 127.0.0.1，
 整条链路可以保留，也不需要买域名。
 
 1. Netlify → Add new site → Import an existing project → 选 GitHub 仓库 city-companion
-2. 构建参数由根目录的 netlify.toml 决定：命令 node tools/build.mjs，发布目录 dist
+2. 构建参数由根目录的 netlify.toml 决定：命令 `SPLIT=1 node tools/build.mjs`，发布目录 `dist`
+   （`SPLIT=1` 把 76 张实拍图外链成 `dist/photos/*.webp`，首屏从 9.5MB 降到 2.6MB；不带这个变量则内联成单文件）
 3. Site configuration → Environment variables 里加：
    - MODEL_BASE_URL = https://api.deepseek.com/v1
    - MODEL_NAME = deepseek-chat
@@ -113,6 +114,14 @@ Cloudflare 的 *.workers.dev / *.pages.dev 在国内会被解析到 127.0.0.1，
 4. Deploys → Trigger deploy，然后访问 https://<站点名>.netlify.app/api/health
    应看到 "chat":true；首页顶栏会显示「站点模型 · deepseek-chat」。
 
-接口实现放在 netlify/functions/（health / search / official / page / chat / amap-poi），
+接口实现放在 netlify/functions/（health / search / official / page / chat / amap-poi / boundary），
 和本地 server.mjs、Cloudflare functions/ 共用同一套 lib/core.js，三处行为一致。
-本地可以先跑 node tools/test-netlify.mjs 验证这六个函数（不需要部署）。
+本地可以先跑 node tools/test-netlify.mjs 验证这些函数（不需要部署）。
+
+两个线上特有的坑已经修掉，改代码时别改回去：
+
+- 行政边界必须走后端代理 `/api/boundary`：DataV.GeoAtlas 按 Referer 拦，浏览器从
+  `*.netlify.app` 直连会 403，表现为「除了重庆，别的城市没有边界」。
+- 海外出口 IP 上 360 打不开、Bing 认不出 `site:gov.cn`，政府站这一路会空。此时
+  `/api/official` 会退到微信公众号：要求标题里同时出现景点名和意图词（门票/预约/开放，
+  票价、开放时间等同义词会先归一），只取标题与摘要并标注「公众号」，宁可说没查到也不凑数。
