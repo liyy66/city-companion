@@ -562,7 +562,13 @@
     if (ans.mode === 'model') chips.push('模型生成 · 已校验引用');
     else chips.push('证据引擎');
     var off = (ans.web && ans.web.official) || null;
-    if (off && off.ok && off.sources && off.sources.length) chips.push('官方原文 · ' + off.sources.length + ' 页');
+    if (off && off.ok && off.sources && off.sources.length) {
+      // 区分「政府站原文」和「公众号文章」：两者的可信度不同，标签必须说实话
+      var onlyWx = off.sources.every(function (s) { return s.kind === 'wechat'; });
+      chips.push(onlyWx
+        ? '公众号 · ' + off.sources.length + ' 篇'
+        : '官方原文 · ' + off.sources.length + ' 页');
+    }
 
     h.push('<div class="ans">');
     h.push('<div class="ans-chips">' + chips.map(function (c) { return '<span>' + U.esc(c) + '</span>'; }).join('') + '</div>');

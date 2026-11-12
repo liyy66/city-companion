@@ -217,9 +217,13 @@
       web.official = off;
       // 把官方正文与联网结果并入证据池（编号续在本地证据之后）
       var offset = g.all.filter(function (f) { return f.text; }).length;
+      var offOnlyWx = !!(off.ok && off.sources && off.sources.length &&
+        off.sources.every(function (s) { return s.kind === 'wechat'; }));
       var webLines = '';
       if (off.ok && off.sources.length) {
-        webLines += '\n【官方渠道正文（gov.cn，权威出处，优先生效）】';
+        webLines += offOnlyWx
+          ? '\n【景区微信公众号文章摘要（景区自己的公告渠道，非政府站原文，引用时说明是公众号）】'
+          : '\n【官方渠道正文（gov.cn，权威出处，优先生效）】';
         off.sources.slice(0, 3).forEach(function (r, i) {
           var n = offset + i + 1;
           webLines += '\n[' + n + '] ' + r.title + '（' + r.host + (r.date ? ' ' + r.date : '') + '）：' + U.cut(r.text, 700);
@@ -252,8 +256,10 @@
         // 官方正文优先作为补充块
         if (off.ok && off.sources.length) {
           local.blocks.unshift({
-            title: '官方页面原文摘录',
-            note: '以下是政府/主管部门页面里与本问题相关的原文，优先以此为准。',
+            title: offOnlyWx ? '景区公众号文章摘要' : '官方页面原文摘录',
+            note: offOnlyWx
+              ? '以下是景区/文旅微信公众号文章里与这个问题相关的摘要（公开转载），不是政府站原文，请点开原文核对。'
+              : '以下是政府/主管部门页面里与本问题相关的原文，优先以此为准。',
             lines: off.sources.slice(0, 3).map(function (r) {
               return {
                 text: U.cut(r.text, 260),
