@@ -118,7 +118,7 @@
     if (bs) {
       // __BUILD__ 是对象（{id, at, cities…}），直接塞进去会显示 [object Object]
       var b = CFG.build();
-      bs.textContent = b && typeof b === 'object' ? ('构建 ' + (b.id || 'dev') + (b.at ? ' · ' + String(b.at).slice(0, 16).replace('T', ' ') : '')) : String(b);
+      bs.textContent = b && typeof b === 'object' ? ((b.id || 'dev') + (b.at ? ' · ' + String(b.at).slice(0, 16).replace('T', ' ') : '')) : String(b);
     }
   }
 
@@ -397,8 +397,10 @@
     };
     add('所在', (place.province || '') + (place.city || '') + (place.d ? ' · ' + place.d : ''));
     add('类型', place.cat);
-    if (place.price) add('票价', place.price.t, { t: '票价出处', u: place.price.s, d: place.price.d });
-    if (place.hours) add('开放时间', typeof place.hours === 'string' ? place.hours : place.hours.t,
+    // 官方事实（facts）里已经有带出处的票价/时间时，通用行就不再重复
+    var hasFact = function (k) { return !!(place.facts && place.facts[k] && place.facts[k].a); };
+    if (place.price && !hasFact('ticket')) add('票价', place.price.t, { t: '票价出处', u: place.price.s, d: place.price.d });
+    if (place.hours && !hasFact('hours')) add('开放时间', typeof place.hours === 'string' ? place.hours : place.hours.t,
       { t: '时间出处', u: (place.hours && place.hours.s) || '', d: (place.hours && place.hours.d) || '' });
     if (place.crowd) add('客流', place.crowd.t, { t: '客流出处', u: place.crowd.s, d: place.crowd.d });
     if (place.hl && place.hl.length) add('看点', place.hl.join('、'));

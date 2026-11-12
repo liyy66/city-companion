@@ -49,6 +49,12 @@ const S = (m, p) => send(m, p, sessionId);
 await S('Page.enable');
 await S('Runtime.enable');
 await S('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 2, mobile: false });
+const PROXY = process.env.PROXY || '';
+if (PROXY) {
+  await S('Page.addScriptToEvaluateOnNewDocument', {
+    source: `try { localStorage.setItem('ax.v1.cfg', JSON.stringify({ proxy: ${JSON.stringify(PROXY)} })); } catch (e) {}`,
+  });
+}
 await S('Page.navigate', { url: URL_ });
 
 const evalJS = async (expr) => {

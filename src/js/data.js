@@ -311,6 +311,13 @@
       ['desc', 'price', 'hours', 'crowd', 'hl', 'src', 'lat', 'lng'].forEach(function (f) {
         if ((hit[f] == null || hit[f] === '' || (Array.isArray(hit[f]) && !hit[f].length)) && p[f] != null) hit[f] = p[f];
       });
+      // 官方事实（票价/时间/入口）在 facts 里，要按 key 合并，否则「从哪个门进」这条就丢了
+      if (p.facts) {
+        hit.facts = hit.facts || {};
+        Object.keys(p.facts).forEach(function (fk) {
+          if (!hit.facts[fk] && p.facts[fk]) hit.facts[fk] = p.facts[fk];
+        });
+      }
       if (p.aliases && p.aliases.length) {
         hit.aliases = (hit.aliases || []).concat(p.aliases.filter(function (a) {
           return (hit.aliases || []).indexOf(a) < 0;

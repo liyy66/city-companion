@@ -49,6 +49,13 @@ const S = (m, p) => send(m, p, sessionId);
 await S('Page.enable');
 await S('Runtime.enable');
 await S('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+// 本地录制时，把 /api 指到线上（线上函数带 CORS: *），这样本地页面也能拿到模型与官方渠道
+const PROXY = process.env.PROXY || '';
+if (PROXY) {
+  await S('Page.addScriptToEvaluateOnNewDocument', {
+    source: `try { localStorage.setItem('ax.v1.cfg', JSON.stringify({ proxy: ${JSON.stringify(PROXY)} })); } catch (e) {}`,
+  });
+}
 await S('Page.navigate', { url: URL_ });
 
 const evalJS = async (expr) => {
@@ -95,46 +102,53 @@ mark('城市安心游：3,949 座城市、1.9 万个点位，打开就能用');
 await sleep(7000);
 
 // 2 — 地图 + 换城市
-mark('底图走高德实时瓦片，换城市就连行政边界一起加载');
 await scrollTo('#map', -40);
 await sleep(1500);
 await evalJS("(() => { const c = window.__APP__.DATA.searchCities('昆明',1)[0]; window.__APP__.UI.setCity(c,{fromUser:true}); return c.n; })()");
-await sleep(7000);
+await sleep(6500);
+mark('底图走高德实时瓦片，换城市就连行政边界一起加载');
+await sleep(2500);
 
 // 3 — 景点详情
-mark('景点卡带官方事实：票价、开放时间、从哪个门进，逐条标出处');
 await evalJS("(() => { const l = window.__APP__.DATA.placesFor('昆明'); const p = l.filter(function (x) { return x.id && x.id.indexOf('expanded-') === 0; })[0] || l[0]; window.__APP__.UI.openDetail(p); return p.n; })()");
-await sleep(8000);
+await sleep(2200);
+mark('景点卡带官方事实：票价、开放时间、从哪个门进，逐条标出处');
+await sleep(6500);
 await evalJS("(() => { const d = document.querySelector('#detailDialog'); if (d && d.open) d.close(); return 'ok'; })()");
-await sleep(1200);
+await sleep(400);
+mark('');
+await sleep(900);
 
 // 4 — AI 连续追问
-mark('AI 向导先查官方渠道，再联网，最后才由模型组织语言');
 await scrollTo('#ai', -50);
 await evalJS("window.__APP__.UI.sendQuestion('翠湖公园要门票吗？')");
 await sleep(3000);
 await scrollLast();
-await sleep(5500);
+await sleep(4500);
+mark('AI 向导先查官方渠道，再联网，最后才由模型组织语言');
 
-mark('每句话后面都有编号，点开能回到原始出处');
 await evalJS("window.__APP__.UI.sendQuestion('那要预约吗？')");
 await sleep(2500);
 await evalJS("window.__APP__.UI.sendQuestion('从哪个门进？')");
 await sleep(3000);
 await scrollLast();
-await sleep(7000);
+await sleep(4000);
+mark('每句话后面都有编号，点开能回到原始出处');
+await sleep(4000);
+mark('');
+await sleep(400);
 
 // 5 — 换城市问行程
-mark('换城市也不丢上下文：「重庆两天怎么安排？」');
 await evalJS("(() => { const c = window.__APP__.DATA.searchCities('重庆',1)[0]; window.__APP__.UI.setCity(c,{fromUser:true}); return c.n; })()");
 await sleep(3000);
 await evalJS("window.__APP__.UI.sendQuestion('重庆两天怎么安排？')");
 await sleep(4000);
 await scrollLast();
-await sleep(8000);
+await sleep(6500);
+mark('换城市也不丢上下文：「重庆两天怎么安排？」');
+await sleep(3000);
 
 // 6 — 消费核验
-mark('查不到就说查不到；报价还能拆开算一遍');
 await scrollTo('#verify', -40);
 await evalJS(`(() => {
   const set = (sel, v) => { const el = document.querySelector(sel); if (!el) return false; el.value = v; el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true})); return true; };
@@ -143,13 +157,16 @@ await evalJS(`(() => {
   if (b) b.click();
   return 'ok';
 })()`);
-await sleep(7000);
+await sleep(2000);
+mark('查不到就说查不到；报价还能拆开算一遍');
+await sleep(5500);
 
 // 7 — 深色主题 + 回到首屏
-mark('深浅色都做了，手机端同样能用');
 await evalJS("(() => { const b = document.querySelector('#btnTheme'); if (b) b.click(); return 'ok'; })()");
 await sleep(2500);
 await evalJS("window.scrollTo({ top: 0, behavior: 'smooth' })");
+await sleep(1200);
+mark('深浅色都做了，手机端同样能用');
 await sleep(4000);
 
 await S('Page.stopScreencast');
