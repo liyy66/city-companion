@@ -83,7 +83,26 @@ if (!cssCount || !jsCount) throw new Error('内联数量异常：css=' + cssCoun
 if (html.includes('src="js/') || html.includes('href="css/')) throw new Error('仍有外部本地引用未内联');
 
 fs.mkdirSync(DIST, { recursive: true });
+// 清掉上一轮调试产物（e2e 截图、服务日志），否则会被一起当成公开静态资源
+for (const name of fs.readdirSync(DIST)) {
+  const p = path.join(DIST, name);
+  if (name.startsWith('_') || /\.(log|err)$/i.test(name)) {
+    try { fs.rmSync(p, { recursive: true, force: true }); } catch { /* 忽略占用 */ }
+  }
+}
 fs.writeFileSync(OUT, html, 'utf8');
+// Cloudflare 静态资源默认把 / 映射到 index.html，所以再写一份同内容的 index.html
+fs.writeFileSync(path.join(DIST, 'index.html'), html, 'utf8');
+// 调试产物（截图、e2e 日志、服务日志）不要被当成公开资源上传
+fs.writeFileSync(path.join(DIST, '.assetsignore'), [
+  '# 构建时自动生成：只发布两个 HTML，调试产物一律不上传',
+  '_*',
+  '*.log',
+  '*.err',
+  '*.json',
+  '部署包',
+  ''
+].join('\n'), 'utf8');
 
 console.log('✓ 产出 ' + OUT);
 console.log('  HTML 总计   ' + kb(Buffer.byteLength(html)));

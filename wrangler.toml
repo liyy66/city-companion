@@ -1,15 +1,26 @@
-# Cloudflare Pages 项目配置
+# Cloudflare 部署配置（新版 Workers + 静态资源；旧版 Pages 也能用这个仓库）
 #
-# 线上构建走 Cloudflare 控制台（Build command: node tools/build.mjs / Output: dist），
-# 这个文件主要是给本地 `npx wrangler pages dev dist` 用的，dev 时会读到同一个 KV 绑定。
+# 新版控制台（Workers & Pages → 创建 → Continue with GitHub）会读这个文件：
+#   构建命令：node tools/build.mjs
+#   部署命令：npx wrangler deploy
+# 旧版 Pages 流程不用这个文件，直接 Build command / Build output = dist 即可。
 
 name = "city-companion"
+main = "worker/index.js"
 compatibility_date = "2025-05-01"
-pages_build_output_dir = "dist"
+# 本地 `npx wrangler dev` 用；线上由平台注入
+workers_dev = true
+
+# 静态产物目录：构建脚本会把单文件写成 dist/index.html 与 dist/城市安心游.html
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+# 单页应用不需要，这里保持「找不到就 404」，避免把 /api 的错路也导到首页
+not_found_handling = "none"
 
 # 可选：给 /api/chat 加按 IP 限流（30 次 / 10 分钟）。
-# 在 Cloudflare 控制台 → Workers & Pages → KV 建一个命名空间，然后把 id 填进来；
-# 不填也能跑，只是没有限流（接口本身已经限制长度、max_tokens 和同站调用）。
+# 在控制台 → 存储与数据库 → KV 建一个命名空间，把 id 填进来；不填也能跑，
+# 接口本身已经限制长度、max_tokens 与同站调用。
 # [[kv_namespaces]]
 # binding = "AX_KV"
-# id = "把 KV 命名空间的 id 粘在这里"
+# id = "把 KV 命名空间 id 粘在这里"

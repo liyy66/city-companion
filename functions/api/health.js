@@ -9,7 +9,8 @@ export const onRequestGet = async ({ env }) => {
     ok: true,
     service: 'anxin-trip',
     version: 3,
-    runtime: 'cloudflare-pages',
+    // Worker 形态会绑 ASSETS（静态资源），旧版 Pages 不绑，用这个区分两种部署
+    runtime: env.ASSETS ? 'cloudflare-worker' : 'cloudflare-pages',
     now: new Date().toISOString(),
     capabilities: {
       // 有博查/Tavily 时走 API（快且合规），没有就退回 HTML 检索（可能被验证码拦）
