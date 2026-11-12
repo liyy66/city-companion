@@ -20,7 +20,7 @@ INK = RGBColor(0x1A, 0x22, 0x1F)
 GREEN = RGBColor(0x1C, 0x5A, 0x4E)
 GREY = RGBColor(0x5F, 0x6B, 0x65)
 AMBER = RGBColor(0x9A, 0x5F, 0x14)
-LINK = "https://city-companion.netlify.app"
+LINK = "https://city-compition.netlify.app"
 
 doc = Document()
 

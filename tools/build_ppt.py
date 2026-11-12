@@ -133,7 +133,7 @@ text(s, Inches(0.85), Inches(5.75), Inches(3.6), Inches(0.9),
 
 picture(s, "01-hero.png", Inches(5.55), Inches(1.55), Inches(7.2), Inches(4.05), border=False)
 text(s, Inches(5.55), Inches(5.75), Inches(7.2), Inches(0.9),
-     "线上体验：https://city-companion.netlify.app", size=15, color=GREEN, bold=True)
+     "线上体验：https://city-compition.netlify.app", size=15, color=GREEN, bold=True)
 text(s, Inches(5.55), Inches(6.12), Inches(7.2), Inches(0.5),
      "点开即用，不需要注册、不需要配置任何 Key。", size=11, color=GREY)
 
@@ -185,7 +185,7 @@ for i, (k, v) in enumerate(rows):
     y += Inches(1.12)
 rule(s, Inches(0.8), Inches(6.0), Inches(11.6), RGBColor(0xD8, 0xD2, 0xC4), Pt(0.75))
 text(s, Inches(0.8), Inches(6.2), Inches(11.6), Inches(0.5),
-     "在线版直接打开：city-companion.netlify.app　·　离线版是一个 9 MB 的 HTML，双击就能用",
+     "在线版直接打开：city-compition.netlify.app　·　离线版是一个 9 MB 的 HTML，双击就能用",
      size=11.5, color=GREY)
 foot(s, 3)
 
@@ -403,7 +403,7 @@ text(s, Inches(1.1), Inches(2.1), Inches(11), Inches(1.6), "陌生的城市，\n
      color=WHITE, bold=True, spacing=1.25)
 rule(s, Inches(1.1), Inches(4.05), Inches(1.3), AMBER, Pt(3))
 text(s, Inches(1.1), Inches(4.35), Inches(11), Inches(1.2),
-     "https://city-companion.netlify.app\n点开即用 · 无需账号 · 每句回答都能回到出处", size=15,
+     "https://city-compition.netlify.app\n点开即用 · 无需账号 · 每句回答都能回到出处", size=15,
      color=RGBColor(0xD5, 0xE3, 0xD9), spacing=1.6)
 text(s, Inches(1.1), Inches(6.3), Inches(11), Inches(0.4), "队伍：利玛　·　2026 年 11 月", size=12,
      color=RGBColor(0x8F, 0xAB, 0x9C))

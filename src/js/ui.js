@@ -568,8 +568,9 @@
     var h = [];
     var parsed = ans.parsed || {};
     var chips = [];
-    if (ans.city) chips.push('城市 · ' + ans.city.name);
-    if (ans.place) chips.push('景点 · ' + ans.place.n);
+    // 「常识兜底」这类问题是库外问题，带上「城市 · 重庆」会让人以为答案在重庆，干脆不显示城市/景点
+    if (ans.city && ans.mode !== 'knowledge') chips.push('城市 · ' + ans.city.name);
+    if (ans.place && ans.mode !== 'knowledge') chips.push('景点 · ' + ans.place.n);
     (parsed.intents || []).slice(0, 2).forEach(function (it) { chips.push('意图 · ' + it.label); });
     if (ans.mode === 'model') chips.push('模型生成 · 已校验引用');
     else if (ans.mode === 'knowledge') chips.push('模型常识 · 未核实');
@@ -631,7 +632,8 @@
       }
     }
 
-    if (off && off.ok === false && off.via === 'proxy' && off.reason && !state.offHintShown) {
+    // 常识兜底的问题本来就不在库里，官方渠道抓不到是正常的，不必打扰游客
+    if (off && off.ok === false && off.via === 'proxy' && off.reason && ans.mode !== 'knowledge' && !state.offHintShown) {
       state.offHintShown = true;
       h.push('<p class="ans-hint">官方渠道这次没抓到页面：' + U.esc(off.reason) + '。回答只用了内置资料与公开网页。</p>');
     }
