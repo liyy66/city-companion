@@ -97,6 +97,12 @@ server.mjs              零依赖本地服务（静态 + /api/*）
 - 搜狗/360 对海外 IP 可能返回验证码，此时检索以博查 API 为主
 - 内置资料只覆盖 19 个城市的精选卡，其余城市靠实时地图 + 周边点位 + 联网问答
 
+## 在线版本
+
+- 作品地址：https://city-companion.netlify.app
+- 能力自检：https://city-companion.netlify.app/api/health
+- 访客打开即用，不需要配置任何 Key（模型 Key 与检索 Key 只存在 Netlify 环境变量里）
+
 ## 部署到 Netlify（国内可直接访问）
 
 Cloudflare 的 *.workers.dev / *.pages.dev 在国内会被解析到 127.0.0.1，打不开；
@@ -113,6 +119,8 @@ Cloudflare 的 *.workers.dev / *.pages.dev 在国内会被解析到 127.0.0.1，
    - 可选：BOCHA_API_KEY（官方渠道走 API，比 HTML 检索稳）、AMAP_KEY（高德 POI / 路径规划）
 4. Deploys → Trigger deploy，然后访问 https://<站点名>.netlify.app/api/health
    应看到 "chat":true；首页顶栏会显示「站点模型 · deepseek-chat」。
+   注意：health 的 chat:true 只证明三条变量都存在，**不证明 Key 有效**；
+   真正发一次 `POST /api/chat` 返回 401 时，说明 Key 被删或复制不全，要换一把。
 
 接口实现放在 netlify/functions/（health / search / official / page / chat / amap-poi / boundary），
 和本地 server.mjs、Cloudflare functions/ 共用同一套 lib/core.js，三处行为一致。
