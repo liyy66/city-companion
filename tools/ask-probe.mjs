@@ -74,7 +74,8 @@ if (process.env.MOCK) {
   await send('Page.reload', {}, sid);
   await sleep(4000);
 } else if (proxy) {
-  await ev(`(() => { const c = JSON.parse(localStorage.getItem('ax.v1.cfg') || '{}'); c.proxy = ${JSON.stringify(proxy)}; localStorage.setItem('ax.v1.cfg', JSON.stringify(c)); return c.proxy; })()`);
+  // 接真实后端时，把上一轮 mock 留在 localStorage 里的模型地址清掉，否则会去连 8899
+  await ev(`(() => { const c = JSON.parse(localStorage.getItem('ax.v1.cfg') || '{}'); c.proxy = ${JSON.stringify(proxy)}; c.baseUrl = ''; c.model = ''; c.modelKey = ''; localStorage.setItem('ax.v1.cfg', JSON.stringify(c)); return c.proxy; })()`);
   await send('Page.reload', {}, sid);
   await sleep(4000);
 }
