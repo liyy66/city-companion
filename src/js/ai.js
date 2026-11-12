@@ -330,7 +330,15 @@
         var local = KB.composeLocal(g);
         local.mode = 'local';
         local.web = web;
-        if (reason) local.modelError = reason;
+        // 上游 401/429/超时 这些技术细节不该给游客看，换成能看懂的一句话
+        var friendly = function (m) {
+          var s = String(m || '');
+          if (/401|invalid|api key|authentication|unauthorized/i.test(s)) return '站点模型还没接通（Key 未生效）';
+          if (/429|太频繁|rate limit/i.test(s)) return '模型这会儿被限流了';
+          if (/timeout|超时|aborted|504/i.test(s)) return '模型响应超时';
+          return s;
+        };
+        if (reason) local.modelError = friendly(reason);
         // 官方正文优先作为补充块
         if (off.ok && off.sources.length) {
           local.blocks.unshift({
