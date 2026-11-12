@@ -76,6 +76,21 @@ const scrollTo = async (sel, offset = -90) => {
   await sleep(800);
 };
 
+// 把最后一条回答滚进视野（截图要拍到答案，不能停在页头）
+const scrollLast = async () => {
+  await evalJS(`(() => {
+    const log = document.querySelector('#chatLog');
+    if (!log) return 'no';
+    const items = log.querySelectorAll('.msg');
+    const last = items[items.length - 1];
+    if (!last) return 'empty';
+    const y = last.getBoundingClientRect().top + window.scrollY - 120;
+    window.scrollTo({ top: y, behavior: 'instant' });
+    return items.length;
+  })()`);
+  await sleep(500);
+};
+
 try {
   await shot('01-hero.png');
   await evalJS("document.querySelector('#map').scrollIntoView({block:'center'})");
@@ -84,7 +99,7 @@ try {
   console.log('kunming:', await evalJS("(() => { const c = window.__APP__.DATA.searchCities('昆明',1)[0]; window.__APP__.UI.setCity(c,{fromUser:true}); return c && c.name; })()"));
   await sleep(3600);
   await shot('03-map-kunming.png');
-  console.log('detail:', await evalJS("(() => { const p = window.__APP__.DATA.placesFor('昆明')[0]; if (p) window.__APP__.UI.openDetail(p); return p && p.name; })()"));
+  console.log('detail:', await evalJS("(() => { const list = window.__APP__.DATA.placesFor('昆明'); const p = list.filter(function (x) { return x.id && x.id.indexOf('expanded-') === 0; })[0] || list[0]; if (p) window.__APP__.UI.openDetail(p); return p && (p.n + ' / ' + p.id); })()"));
   await sleep(2600);
   await shot('04-place.png');
   await evalJS("(() => { const d = document.querySelector('#detailDialog'); if (d && d.open) d.close(); return 'ok'; })()");
@@ -93,17 +108,20 @@ try {
   await scrollTo('#ai', -70);
   await evalJS("window.__APP__.UI.sendQuestion('翠湖公园要门票吗？')");
   await sleep(7000);
+  await scrollLast();
   await shot('05-ai-1.png');
   await evalJS("window.__APP__.UI.sendQuestion('那要预约吗？')");
   await sleep(6000);
   await evalJS("window.__APP__.UI.sendQuestion('从哪个门进？')");
   await sleep(6500);
+  await scrollLast();
   await shot('06-ai-3.png');
 
   console.log('chongqing:', await evalJS("(() => { const c = window.__APP__.DATA.searchCities('重庆',1)[0]; window.__APP__.UI.setCity(c,{fromUser:true}); return c && c.name; })()"));
   await sleep(2800);
   await evalJS("window.__APP__.UI.sendQuestion('重庆两天怎么安排？')");
   await sleep(9000);
+  await scrollLast();
   await shot('07-ai-plan.png');
 
   await scrollTo('#verify', -80);

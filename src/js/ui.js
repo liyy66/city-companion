@@ -115,7 +115,11 @@
     });
 
     var bs = $('#buildStamp');
-    if (bs) bs.textContent = CFG.build();
+    if (bs) {
+      // __BUILD__ 是对象（{id, at, cities…}），直接塞进去会显示 [object Object]
+      var b = CFG.build();
+      bs.textContent = b && typeof b === 'object' ? ('构建 ' + (b.id || 'dev') + (b.at ? ' · ' + String(b.at).slice(0, 16).replace('T', ' ') : '')) : String(b);
+    }
   }
 
   function animateCounters() {
