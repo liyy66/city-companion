@@ -105,8 +105,56 @@
     '{"lead":"一句话结论","answers":[{"title":"门票","lines":[{"t":"句子","n":[1]}]}],"missing":[]}。' +
     'n 必须取上面证据里出现过的编号；写不出来的事实就不要写，放进 missing。';
 
-  function buildPrompt(question, g, webBlock) {    var ev = KB.evidencePrompt(g);
-    var sys = [
+  // 资料库里没有 / 模型找不到可引用证据时走这条路：允许模型用自己的知识回答，
+  // 但必须自己声明哪些是要核实的，界面上会标「模型常识 · 未核实」。
+  var GENERAL_PROMPT = [
+    '你是「城市安心游」的向导小安。用户可能问景点、城市、人物、新闻、常识，什么都可能问。',
+    '规则：',
+    '1) 先给一句结论，再分点讲清楚，最多 5 条，口语中文，不要 Markdown 标题。',
+    '2) 你有自己的知识，就用自己的知识回答，不要因为「资料库里没有」就拒答。',
+    '3) 但票价、开放时间、政策、新闻、具体日期与数字这类会变的信息，不确定就写「需要核实」，给范围而不是编一个精确值。',
+    '4) 不知道就说不知道，不要编人名、职务、事件细节。',
+    '5) 不要提「根据证据」「作为 AI」。',
+    '只输出 JSON：{"lead":"一句话结论","answers":[{"title":"小标题","lines":[{"t":"句子"}]}],"missing":["需要核实的点"]}'
+  ].join('\n');
+
+  function buildGeneralPrompt(question, g, webBlock) {
+    var ev = KB.evidencePrompt(g);
+    var user = [
+      '【当前上下文】城市：' + (g.cityName || '未确定') + '；景点：' + (g.place ? g.place.n : '未指定'),
+      '【用户问题】' + question,
+      '【手里有的资料（有就用，没有就想办法用自己的知识回答）】',
+      ev.text || '（无）',
+      webBlock || ''
+    ].join('\n');
+    return [
+      { role: 'system', content: GENERAL_PROMPT },
+      { role: 'user', content: user }
+    ];
+  }
+
+  // 不需要编号的版本：只要句子不像空话就留下
+  function validateGeneralJSON(obj) {
+    if (!obj || !obj.answers) return null;
+    var blocks = [];
+    (obj.answers || []).forEach(function (a) {
+      if (!a || !a.lines) return;
+      var lines = (a.lines || []).map(function (l) {
+        if (!l) return null;
+        var t = String(l.t || l.text || '').trim();
+        return t ? { text: t, cites: [] } : null;
+      }).filter(Boolean);
+      if (lines.length) blocks.push({ title: String(a.title || '回答'), lines: lines });
+    });
+    if (!blocks.length) return null;
+    return {
+      lead: String(obj.lead || '').trim(),
+      blocks: blocks,
+      notes: (obj.missing || []).map(function (m) { return { text: String(m) }; })
+    };
+  }
+
+  function buildPrompt(question, g, webBlock) {    var ev = KB.evidencePrompt(g);    var sys = [
       '你是「城市安心游」的行程向导小安，服务对象是刚落地一座陌生城市的游客。',
       '硬性规则，违反任何一条都算失败：',
       '1) 只能使用下面编号证据里出现的事实。票价、时间、入口、电话、距离、政策，一律不得凭常识补全。',
@@ -168,25 +216,54 @@
     parsed.intents.forEach(function (it) {
       if (WEB_WORDS[it.id] && words.indexOf(WEB_WORDS[it.id]) < 0) words.push(WEB_WORDS[it.id]);
     });
+    // 跟景点/城市都没关系的问法（新闻、人物、常识）：直接把问题本身当检索词
+    if (!place && !cityName && parsed.raw) {
+      return String(parsed.raw).replace(/^(请问|问一下|帮我看看|帮我|我想问)/, '').trim().slice(0, 60);
+    }
     var parts = [place ? place.n : '', cityName || '', words.slice(0, 2).join(' ')];
     var q = parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+    // 资料库里没有这个景点时，用问题里抓到的专有名词去搜，而不是只搜城市名
+    if (!place) {
+      var ent = KB.entityOf ? KB.entityOf(parsed.raw || '') : '';
+      if (ent && q.indexOf(ent) < 0) q = (ent + ' ' + words.slice(0, 2).join(' ') + ' ' + (cityName || '')).replace(/\s+/g, ' ').trim();
+    }
     return q || (cityName || '') + ' 旅游 官方 公告';
   }
 
   function wantsFresh(parsed) {
     var ids = parsed.intents.map(function (x) { return x.id; });
+    if (!ids.length) return true; // 没命中任何旅行意图（新闻、人物、常识）也去联网问一句
+    if (/最近|新闻|今天|昨天|发生|事件|涨价|免费|闭馆|维修/.test(String(parsed.raw || ''))) return true;
     return ids.some(function (id) { return ['hours', 'crowd', 'booking', 'ticket', 'safety', 'route'].indexOf(id) >= 0; });
+  }
+
+  // 资料库里没有、或者模型给不出可引用证据时的兜底：让它用自己的知识答，
+  // 但整篇标成「未核实」，并且把需要核实的点列出来。
+  function generalAnswer(question, g, webLines, step) {
+    if (!CFG.modelReady()) return Promise.resolve(null);
+    if (step) step('compose', '资料不够，改用模型自己的知识回答（会标注未核实）');
+    return callModel(buildGeneralPrompt(question, g, webLines), { maxTokens: 760, temperature: 0.35 })
+      .then(function (text) {
+        var v = validateGeneralJSON(extractJSON(text));
+        if (!v) return null;
+        v.mode = 'knowledge';
+        v.unverified = true;
+        v.cites = [];
+        v.channels = g.cityName ? KB.channels(g.cityName).slice(0, 3) : KB.channels('全国').slice(0, 3);
+        return v;
+      })
+      .catch(function () { return null; });
   }
 
   /**
    * 主流程。hooks: {step(name, detail), delta(text)}
-   */
-  function ask(question, hooks) {
+   */  function ask(question, hooks) {
     hooks = hooks || {};
     var step = function (name, detail) { if (hooks.step) hooks.step(name, detail); };
 
     step('understand', '解析城市与意图');
     var parsed = KB.parse(question, state.ctx);
+    parsed.raw = question;
     if (parsed.city) state.ctx.city = parsed.city;
     if (parsed.place) state.ctx.place = parsed.place;
 
@@ -196,7 +273,7 @@
 
     state.messages.push({ role: 'user', content: question });
 
-    var webPromise, officialPromise;
+    var webPromise, officialPromise, lastWeb = null;
     if (wantsFresh(parsed)) {
       step('web', '查官方渠道 + 联网核对');
       var q = webQueryFor(parsed, g.cityName, g.place);
@@ -213,6 +290,7 @@
 
     return Promise.all([webPromise, officialPromise]).then(function (pair) {
       var web = pair[0];
+      lastWeb = web;
       var off = pair[1];
       web.official = off;
       // 把官方正文与联网结果并入证据池（编号续在本地证据之后）
@@ -284,6 +362,16 @@
 
       if (!CFG.modelReady()) return fallback('');
 
+      // 判断「这条问题是不是超出了内置资料的范围」：问的是资料库里没有的对象，
+      // 或者问的是新闻/人物/评价这类非景区问题。超范围就直接用模型自己的知识答，
+      // 而不是让它拿着不相关的证据硬凑——那正是用户看到的「答不上来」。
+      var ent = KB.entityOf ? KB.entityOf(question) : '';
+      var localBlob = (g.all || []).filter(function (f) { return !f.web; })
+        .map(function (f) { return (f.title || '') + (f.text || ''); }).join(' ');
+      var newsy = /最近|新闻|发生|事件|事情|评价|怎么样|是谁|身价|公司|股价/.test(question);
+      var hasEvidence = (g.all || []).some(function (f) { return !!f.text; });
+      var thin = !g.place && ((!!ent && localBlob.indexOf(ent) < 0) || newsy || !hasEvidence);
+
       var messages = buildPrompt(question, g, webLines);
       // 小模型（4B 这级）经常第一次就漏编号或回成一坨解释文字：给它一次「看着自己上一版改」的机会，
       // 这正是「答非所问」里比较隐蔽的一种 —— 模型答得挺顺，但没有一句能对上出处。
@@ -299,21 +387,28 @@
           ]), left - 1);
         });
       };
-      return attempt(messages, 1).then(function (v) {
-        if (!v) return fallback('模型输出没有可校验的引用（已重试一次），已改用证据引擎');
-        v.mode = 'model';
-        v.web = web;
-        v.cites = [];
-        v.blocks.forEach(function (b) {
-          b.lines.forEach(function (l) { v.cites = v.cites.concat(l.cites); });
+      var cited = function () {
+        return attempt(messages, 1).then(function (v) {
+          if (!v) return generalAnswer(question, g, webLines, step);
+          v.mode = 'model';
+          v.web = web;
+          v.cites = [];
+          v.blocks.forEach(function (b) {
+            b.lines.forEach(function (l) { v.cites = v.cites.concat(l.cites); });
+          });
+          v.channels = g.cityName ? KB.channels(g.cityName).slice(0, 4) : KB.channels('全国').slice(0, 3);
+          return v;
         });
-        v.channels = g.cityName ? KB.channels(g.cityName).slice(0, 4) : KB.channels('全国').slice(0, 3);
-        return v;
-      }).catch(function (e) {
+      };
+      var run = thin
+        ? generalAnswer(question, g, webLines, step).then(function (v) { return v || cited(); })
+        : cited();
+      return run.catch(function (e) {
         return fallback('模型调用失败：' + e.message);
       });
     }).then(function (ans) {
       ans.parsed = parsed;
+      if (!ans.web) ans.web = lastWeb;
       ans.city = state.ctx.city;
       // 只有这一轮真的用到了景点，才把它显示成「景点」上下文
       ans.place = g.place || null;

@@ -572,6 +572,7 @@
     if (ans.place) chips.push('景点 · ' + ans.place.n);
     (parsed.intents || []).slice(0, 2).forEach(function (it) { chips.push('意图 · ' + it.label); });
     if (ans.mode === 'model') chips.push('模型生成 · 已校验引用');
+    else if (ans.mode === 'knowledge') chips.push('模型常识 · 未核实');
     else chips.push('证据引擎');
     var off = (ans.web && ans.web.official) || null;
     if (off && off.ok && off.sources && off.sources.length) {
@@ -585,6 +586,10 @@
     h.push('<div class="ans">');
     h.push('<div class="ans-chips">' + chips.map(function (c) { return '<span>' + U.esc(c) + '</span>'; }).join('') + '</div>');
     if (ans.lead) h.push('<p class="ans-lead">' + U.esc(ans.lead) + '</p>');
+    if (ans.mode === 'knowledge') {
+      h.push('<p class="ans-unverified">这条回答用的是模型自己的知识，没有可核对的官方出处（标「未核实」）。' +
+        '票价、开放时间、新闻这类会变的信息，请用下面的核实入口再确认一遍。</p>');
+    }
 
     (ans.blocks || []).forEach(function (b) {
       h.push('<div class="ans-block"><h5>' + U.esc(b.title) + '</h5>');
@@ -742,7 +747,7 @@
       bubble('bot', answerHTML(ans));
       renderEvidence(ans);
       state.lastAnswer = ans;
-      if (status) status.textContent = '回答已生成 · ' + (ans.mode === 'model' ? '模型引用已校验' : '内置证据引擎');
+      if (status) status.textContent = '回答已生成 · ' + (ans.mode === 'model' ? '模型引用已校验' : (ans.mode === 'knowledge' ? '模型常识 · 未核实' : '内置证据引擎'));
       if (ans.place) {
         MAP.focusPlace(ans.place, 14);
         var meta = $('#placeColTitle');

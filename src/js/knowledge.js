@@ -76,6 +76,27 @@
     return /那|它|这里|那儿|那儿|这个|那个|还有|再问|换成|换成/.test(s) || s.length <= 4;
   }
 
+  // 从问题里抓一个「像专有名词」的词：引号里的、或者「xx宫/馆/园/山/湖…」这类地名后缀，
+  // 或者紧挨着「门票/开放/怎么去/在哪」的那个词。用来在资料库里查不到时仍然能去联网问一句。
+  var ENTITY_SUFFIX = '宫|园|馆|寺|山|湖|塔|桥|城|陵|镇|村|街|殿|堂|楼|阁|窟|谷|洞|泉|瀑|海|岛|湾|峰|岭|峡|江|河|林|原|场|广场|中心|博物馆|美术馆|大剧院|公园|景区|古镇|老街|湿地|动物园|植物园';
+  var ENTITY_RE = new RegExp('([\\u4e00-\\u9fa5A-Za-z\\u00b7]{2,12}(?:' + ENTITY_SUFFIX + '))');
+  var NOISE_TAIL = /^(请问|想问|问一下|帮我|我想|我想问|想知道|那|这个|那个)/;
+  function entityOf(text) {
+    var s = String(text || '').trim();
+    if (!s) return '';
+    var q = s.match(/[「『“"《](.+?)[」』”"》]/);
+    if (q && q[1] && q[1].length <= 20) return q[1].trim();
+    var m = s.match(ENTITY_RE);
+    if (m) {
+      var cand = m[1].replace(NOISE_TAIL, '');
+      if (cand.length >= 2) return cand;
+    }
+    // 「说说黄仁勋出纳的事情」这类：取「说说/讲讲/介绍一下」后面到句末的 2–12 字
+    var v = s.match(/(?:说说|讲讲|介绍一下|聊聊|怎么看|如何评价)([\u4e00-\u9fa5A-Za-z·]{2,12})(?:的|这|那|事情|事|情况|问题|吗|呢|$)/);
+    if (v) return v[1];
+    return '';
+  }
+
   /** 解析问题：城市 / 景点 / 意图。ctx 为上一轮的上下文 */
   function parse(question, ctx) {
     ctx = ctx || {};
@@ -427,6 +448,6 @@
     INTENTS: INTENTS, parse: parse, gather: gather, composeLocal: composeLocal,
     channels: channels, fee: fee, evidencePrompt: evidencePrompt,
     factsOfPlace: factsOfPlace, refFacts: refFacts,
-    nationalChannels: NATIONAL_CHANNELS, intentTitle: INTENT_ANSWER_TITLE
+    nationalChannels: NATIONAL_CHANNELS, intentTitle: INTENT_ANSWER_TITLE, entityOf: entityOf
   };
 })(window);
