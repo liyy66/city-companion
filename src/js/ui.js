@@ -101,6 +101,7 @@
         setPill($('#pillModel'), '站点模型 · ' + (caps.model || '已开通'), 'ok');
         setPill($('#pillMode'), caps.model || '模型 + 证据', 'ok');
       }
+      refreshGreetChip();
       var footer = $('#footerStatus');
       if (!footer) return;
       var search = caps.search === 'bocha' ? '博查 API'
@@ -593,9 +594,16 @@
       h.push('</div>');
     });
 
-    (ans.notes || []).forEach(function (n) {
-      h.push('<p class="ans-warn">' + U.esc(n.text) + '</p>');
-    });
+    // 缺口提示：一条就直说；多条合并成一块，避免整屏红色条幅把人吓住
+    var notes = (ans.notes || []).filter(function (n) { return n && n.text; });
+    if (notes.length === 1) {
+      h.push('<p class="ans-warn">' + U.esc(notes[0].text) + '</p>');
+    } else if (notes.length > 1) {
+      var gapText = notes.map(function (n) {
+        return String(n.text).replace(/^未收录[:：]\s*/, '');
+      }).join('；');
+      h.push('<p class="ans-warn"><strong>还差 ' + notes.length + ' 项没收录：</strong>' + U.esc(gapText) + '</p>');
+    }
 
     if (ans.modelError) {
       h.push('<p class="ans-hint">' + U.esc(ans.modelError) + '（已自动切换到内置证据引擎，回答仍然逐句有出处。）</p>');
@@ -1121,8 +1129,18 @@
     var city = state.city ? state.city.name : '重庆';
     bubble('bot', '<div class="ans"><p class="ans-lead">我是小安。你可以直接问某座城市或某个景点的门票、开放时间、从哪个门进、怎么过去、人多不多。</p>' +
       '<p class="ans-hint">我会先说清楚理解成了什么，再只用查得到的资料回答，每句带出处。查不到就说查不到。</p>' +
-      '<div class="ans-chips"><span>当前城市 · ' + U.esc(city) + '</span><span>' +
+      '<div class="ans-chips"><span>当前城市 · ' + U.esc(city) + '</span><span id="greetModel">' +
       (CFG.modelReady() ? '模型 · ' + U.esc(CFG.get().model) : '证据引擎 · 未配置模型') + '</span></div></div>');
+  }
+
+  // 开场那句气泡是首屏就画出来的，那时 /api/health 还没回来。
+  // 站点自带模型时要把这枚 chip 改写成实际状态，否则用户会看到「未配置模型」却拿到模型回答。
+  function refreshGreetChip() {
+    var n = $('#greetModel');
+    if (!n) return;
+    n.textContent = CFG.modelReady()
+      ? '模型 · ' + (CFG.get().model || CFG.siteModel() || '已配置')
+      : '证据引擎 · 未配置模型';
   }
 
   function bindFee() {

@@ -164,6 +164,10 @@ async function main() {
   const q4 = await evaluate(`(async () => { const a = await UI.sendQuestion('那大观楼呢？'); return { place: a.place && a.place.n, lead: a.lead, city: a.city && a.city.name }; })()`);
   console.log('[问4 换景点] ' + JSON.stringify(q4));
 
+  // 行程类问题：最容易出现「一堆未收录」的情况，看合并后的缺口提示是否克制
+  const q5 = await evaluate(`(async () => { const a = await UI.sendQuestion('重庆两天怎么安排？'); return { mode: a.mode, blocks: (a.blocks||[]).length, cites: (a.cites||[]).length, notes: (a.notes||[]).length, lead: a.lead }; })()`);
+  console.log('[问5 行程] ' + JSON.stringify(q5));
+
   // 任意城市（非重庆）地图是否完整
   const cq = await evaluate(`(async () => {
     const c = DATA.resolveCity('阿勒泰');
