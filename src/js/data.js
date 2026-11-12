@@ -294,7 +294,7 @@
     var I = build();
     var arr = (I.placesByCity.get(cityName) || []).slice();
     arr.sort(function (a, b) {
-      var rank = { curated: 0, guide: 1, county: 2 };
+      var rank = { curated: 0, expanded: 0, guide: 1, county: 2 };
       var ra = rank[a.kind] == null ? 3 : rank[a.kind];
       var rb = rank[b.kind] == null ? 3 : rank[b.kind];
       return ra - rb || String(a.n).localeCompare(String(b.n), 'zh-CN');
