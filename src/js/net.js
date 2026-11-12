@@ -51,16 +51,20 @@
     if (!adcode) return Promise.resolve(null);
     if (boundaryCache.has(adcode)) return boundaryCache.get(adcode);
 
-    var urls = [
+    // DataV 会按 Referer 拦：从 xxx.netlify.app 这类第三方域名直接取会 403。
+    // 所以有同源后端时优先走后端（服务端没有 Referer），没有时再直连（本地 file:// 用）。
+    var proxyURL = CFG.proxyURL('/api/boundary', { adcode: adcode });
+    var urls = (proxyURL ? [proxyURL] : []).concat([
       'https://geo.datav.aliyun.com/areas_v3/bound/' + adcode + '_full.json',
       'https://geo.datav.aliyun.com/areas_v3/bound/' + adcode + '.json'
-    ];
+    ]);
 
     var p = (async function () {
       for (var i = 0; i < urls.length; i++) {
         try {
           var geo = await fetchJSON(urls[i], { timeout: 14000, tag: '行政边界' });
           if (geo && geo.type) return geo;
+          if (geo && geo.geo && geo.geo.type) return geo.geo;
         } catch (e) { /* 试下一个 */ }
       }
       return null;

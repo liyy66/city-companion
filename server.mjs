@@ -243,6 +243,25 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, r);
     }
 
+    if (p === '/api/boundary') {
+      // DataV 按 Referer 拦（第三方域名直连会 403），这里转一手：服务端没有 Referer
+      const adcode = url.searchParams.get('adcode') || '';
+      if (!/^\d{6}$/.test(adcode)) return fail(res, 400, 'adcode 必须是 6 位数字');
+      const cands = [
+        'https://geo.datav.aliyun.com/areas_v3/bound/' + adcode + '_full.json',
+        'https://geo.datav.aliyun.com/areas_v3/bound/' + adcode + '.json'
+      ];
+      for (const u of cands) {
+        try {
+          const r = await withTimeout(fetchPage(u, { timeout: 8000, accept: 'application/json' }), 9000, '边界');
+          if (!r.ok) continue;
+          const geo = JSON.parse(r.text);
+          if (geo && geo.type) return json(res, 200, geo);
+        } catch (e) { /* 试下一个 */ }
+      }
+      return fail(res, 502, '没能取到 ' + adcode + ' 的边界数据');
+    }
+
     if (p === '/api/page') {
       const target = url.searchParams.get('url') || '';
       if (!target) return fail(res, 400, '缺少 url');

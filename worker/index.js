@@ -13,6 +13,7 @@ import * as health from '../functions/api/health.js';
 import * as search from '../functions/api/search.js';
 import * as official from '../functions/api/official.js';
 import * as page from '../functions/api/page.js';
+import * as boundary from '../functions/api/boundary.js';
 import * as poi from '../functions/api/amap/poi.js';
 import * as chat from '../functions/api/chat.js';
 
@@ -21,6 +22,7 @@ const ROUTES = [
   { path: '/api/search', mod: search },
   { path: '/api/official', mod: official },
   { path: '/api/page', mod: page },
+  { path: '/api/boundary', mod: boundary },
   { path: '/api/amap/poi', mod: poi },
   { path: '/api/chat', mod: chat }
 ];
