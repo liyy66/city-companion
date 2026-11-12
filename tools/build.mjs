@@ -8,6 +8,8 @@ const SRC = path.join(ROOT, 'src');
 const DATA = path.join(ROOT, 'data');
 const DIST = path.join(ROOT, 'dist');
 const OUT = path.join(DIST, '城市安心游.html');
+// SPLIT=1：实拍图外链（线上用），默认内联（本地单文件用）
+const SPLIT = process.env.SPLIT === '1';
 
 const read = (p) => fs.readFileSync(p, 'utf8');
 const bytes = (p) => fs.readFileSync(p);
@@ -46,11 +48,21 @@ html = html.replace(/<script src="([^"]+)"><\/script>/g, (m, src) => {
 const photosDir = path.join(DATA, 'photos');
 const photos = {};
 let photoBytes = 0;
-for (const f of fs.readdirSync(photosDir).sort()) {
-  if (!/\.webp$/i.test(f)) continue;
-  const buf = bytes(path.join(photosDir, f));
-  photoBytes += buf.length;
-  photos['photos/' + f] = 'data:image/webp;base64,' + buf.toString('base64');
+const photoList = fs.readdirSync(photosDir).sort().filter((f) => /\.webp$/i.test(f));
+if (SPLIT) {
+  fs.mkdirSync(path.join(DIST, 'photos'), { recursive: true });
+  for (const f of photoList) {
+    const dst = path.join(DIST, 'photos', f);
+    fs.copyFileSync(path.join(photosDir, f), dst);
+    photoBytes += fs.statSync(dst).size;
+    photos['photos/' + f] = 'photos/' + f;
+  }
+} else {
+  for (const f of photoList) {
+    const buf = bytes(path.join(photosDir, f));
+    photoBytes += buf.length;
+    photos['photos/' + f] = 'data:image/webp;base64,' + buf.toString('base64');
+  }
 }
 
 /* 4. 数据内联 */
@@ -110,6 +122,5 @@ console.log('  内联样式    ' + cssCount + ' 个');
 console.log('  内联脚本    ' + jsCount + ' 个（外加数据与启动块）');
 console.log('  内嵌数据    ' + kb(Buffer.byteLength(atlasJSON)) + ' · ' + atlas.cities.length + ' 城市 / ' +
   atlas.pois.length + ' 点位 / ' + atlas.places.length + ' 景点卡');
-console.log('  内嵌实拍    ' + Object.keys(photos).length + ' 张 · 原始 ' + kb(photoBytes) + ' → base64 ' +
-  kb(JSON.stringify(photos).length));
+console.log('  实拍图片    ' + Object.keys(photos).length + ' 张 · ' + kb(photoBytes) + (SPLIT ? '（外链 dist/photos）' : '（base64 内联）'));
 console.log('  构建号      ' + digest + ' @ ' + stamp);

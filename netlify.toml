@@ -8,8 +8,9 @@
 # 这个作品只有一页，站内跳转都是 #锚点，不需要 SPA 重写。
 
 [build]
-  # 把 src/ + data/ 内联成一个 9MB 的单文件 HTML，产物在 dist/
-  command = "node tools/build.mjs"
+  # SPLIT=1：实拍图外链成 dist/photos/*.webp，首屏从 9.5MB 降到 3MB 左右，
+  # 图片等点开景点详情再按需加载；本地做单文件交付物时不要这个变量（默认内联）。
+  command = "SPLIT=1 node tools/build.mjs"
   publish = "dist"
 
 [functions]
