@@ -8,10 +8,12 @@
 # 这个作品只有一页，站内跳转都是 #锚点，不需要 SPA 重写。
 
 [build]
-  # SPLIT=1：实拍图外链成 dist/photos/*.webp，首屏从 9.5MB 降到 3MB 左右，
-  # 图片等点开景点详情再按需加载；本地做单文件交付物时不要这个变量（默认内联）。
-  command = "SPLIT=1 node tools/build.mjs"
-  publish = "dist"
+  # 这里不再跑构建：产物先在本机 `SPLIT=1 node tools/build.mjs` 生成 dist，
+  # 再由 `node tools/pack-site.mjs` 整理成提交进仓库的 site/ 目录。
+  # 原因：Netlify 侧的构建从 2026-11-12 20:48 起连续失败（同一份代码在本机 clean clone
+  # 能构建成功），日志又需要登录才能看；发布预构建目录可以跳过这一步，先保证线上是最新版本。
+  command = "echo prebuilt site"
+  publish = "site"
 
 [functions]
   directory = "netlify/functions"
