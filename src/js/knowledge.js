@@ -8,6 +8,8 @@
   'use strict';
 
   var INTENTS = [
+    // 行程类必须排在最前：否则「重庆两天怎么安排」匹配不到意图，会退化成一串景点罗列
+    { id: 'plan', label: '行程与安排', kw: ['安排', '行程', '怎么玩', '怎么逛', '规划', '几天', '几日', '一日游', '两日游', '三日游', '玩几天', '周末去', '怎么安排', '路线怎么'] },
     { id: 'ticket', label: '门票与价格', kw: ['门票', '要票', '买票', '票价', '多少钱', '收费', '免费', '价格', '学生票', '半价', '免票', '优惠', '套票'] },
     { id: 'booking', label: '预约与实名', kw: ['预约', '预订', '抢票', '实名', '名额', '限流', '订票', '提前订'] },
     { id: 'hours', label: '开放时间', kw: ['几点', '开放', '开门', '闭园', '关园', '关门', '营业', '时间', '夜场', '夜间', '开到', '多久', '几点关'] },
@@ -293,6 +295,7 @@
   }
 
   var INTENT_ANSWER_TITLE = {
+    plan: '行程与安排',
     ticket: '门票与价格', booking: '预约要求', hours: '开放时间', entrance: '从哪个门进',
     route: '怎么过去', crowd: '人多不多', safety: '安全与避坑', verify: '消费核验',
     food: '吃住', photo: '拍照机位', intro: '概况与看点'
@@ -336,6 +339,38 @@
         lines: lines.map(function (f) { return { text: f.text, cites: [f.cite], kind: f.id }; })
       });
     });
+
+    // 行程类问题：按已收录景点和片区排两天，并明确「开放/预约/交通没收录」，不要回一串景点名
+    if (intentIds.indexOf('plan') >= 0 && cityName) {
+      var planCards = DATA.placesFor(cityName).filter(function (x) { return x.kind !== 'county'; }).slice(0, 9);
+      if (planCards.length >= 2) {
+        var areaMap = {};
+        planCards.forEach(function (c) {
+          var k = c.d || '城区';
+          (areaMap[k] = areaMap[k] || []).push(c);
+        });
+        var areas = Object.keys(areaMap);
+        var half = Math.max(1, Math.ceil(areas.length / 2));
+        var day1 = areas.slice(0, half).reduce(function (a, k) { return a.concat(areaMap[k]); }, []);
+        var day2 = areas.slice(half).reduce(function (a, k) { return a.concat(areaMap[k]); }, []);
+        var names = function (arr) { return arr.map(function (c) { return c.n; }).join('、'); };
+        if (!day2.length) {
+          // 精选卡少于 3 张时，第二天用「周边点位」补：地图上已经标出来了，比硬编景点诚实
+          day2 = [{ n: '周边点位（地图右侧「加载更多周边点位」，或按片区在高德里搜）' }];
+        }
+        blocks.push({
+          title: '两天可以这样排',
+          lines: [
+            { text: '第一天：' + names(day1) + '。', cites: [], kind: 'plan' },
+            {
+              text: '第二天：' + (day2.length ? names(day2) : '从剩下的景点里再挑两三处，或去周边区县走一趟') + '。',
+              cites: [], kind: 'plan'
+            }
+          ],
+          note: '这只是按已收录景点和片区做的组合，不含实时开放时间、预约、交通与客流——出发前用下面的核实入口确认。'
+        });
+      }
+    }
 
     // 概况型问题额外给出处
     var sources = dedupeCites(g.evidence.map(function (f) { return f.cite; }).filter(function (c) { return c.u; }));

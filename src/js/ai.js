@@ -206,6 +206,7 @@
   }
 
   var WEB_WORDS = {
+    plan: '行程 安排 攻略',
     ticket: '门票 价格', hours: '开放时间', booking: '预约 实名', entrance: '入口 大门 怎么进',
     route: '怎么去 交通', crowd: '人多 排队 限流', safety: '安全 提示 公告', verify: '投诉 举报 电话',
     food: '吃什么 美食', photo: '拍照 机位', intro: '介绍 历史'
