@@ -132,6 +132,19 @@
     }
     if (!city && place) city = DATA.resolveCity(place.city) || { name: place.city };
 
+    // 问题里点名了一个「库里没有的实体」（凡尔赛宫、黄仁勋……）时，不能沿用上一轮的景点，
+    // 否则会把上一轮的城市/景点证据塞进新问题的回答里，出现「你问凡尔赛宫，但资料只涉及重庆翠湖」这种答非所问。
+    var entNew = entityOf(q);
+    if (entNew && place) {
+      var pn = String(place.n || '');
+      var sameEnt = pn.indexOf(entNew) >= 0 || entNew.indexOf(pn) >= 0;
+      var inLocal = !!(DATA.matchNames(entNew) || []).length;
+      if (!sameEnt && !inLocal) {
+        place = null; placeHit = ''; carried = false;
+        if (explicitCity && city) { /* 保留显式城市 */ } else if (ctx.city) { city = DATA.resolveCity(ctx.city) || null; }
+      }
+    }
+
     // 未点名景点，但问题里直接出现了某城市下的景点名（已在 names 里处理）
     var needCity = !city && !place;
     return {

@@ -120,11 +120,13 @@
 
   function buildGeneralPrompt(question, g, webBlock) {
     var ev = KB.evidencePrompt(g);
+    var off = !!g.offTopic;
     var user = [
-      '【当前上下文】城市：' + (g.cityName || '未确定') + '；景点：' + (g.place ? g.place.n : '未指定'),
+      '【当前上下文】城市：' + (off ? '（与本题无关，不要引用）' : (g.cityName || '未确定')) +
+        '；景点：' + (off ? '（与本题无关，不要引用）' : (g.place ? g.place.n : '未指定')),
       '【用户问题】' + question,
       '【手里有的资料（有就用，没有就想办法用自己的知识回答）】',
-      ev.text || '（无）',
+      off ? '（本题超出了本地资料范围，下面的资料与本问题无关，不要引用）' : (ev.text || '（无）'),
       webBlock || ''
     ].join('\n');
     return [
@@ -380,6 +382,9 @@
       var newsy = /最近|新闻|发生|事件|事情|评价|怎么样|是谁|身价|公司|股价/.test(question);
       var hasEvidence = (g.all || []).some(function (f) { return !!f.text; });
       var thin = !g.place && ((!!ent && localBlob.indexOf(ent) < 0) || newsy || !hasEvidence);
+      // 问的是库里没有的实体（凡尔赛宫、黄仁勋……）：把城市/景点上下文一并作废，
+      // 否则模型会写出「你问凡尔赛宫，但资料只涉及重庆翠湖」这种串台回答。
+      if (!!ent && localBlob.indexOf(ent) < 0) g.offTopic = true;
 
       var messages = buildPrompt(question, g, webLines);
       // 小模型（4B 这级）经常第一次就漏编号或回成一坨解释文字：给它一次「看着自己上一版改」的机会，
